@@ -26,7 +26,7 @@ export const airtablelogin = (req, res) => {
   const redirectUri =
     process.env.AIRTABLE_REDIRECT_URI ||
     (isProd
-      ? "https://airtable-forms.onrender.com/api/auth/airtable/callback"
+      ? "https://airtable-assignment-j0jc.onrender.com/api/auth/airtable/callback"
       : "http://localhost:5000/api/auth/airtable/callback");
 
   const scope = "schema.bases:read data.records:write data.records:read";
@@ -100,7 +100,7 @@ export const callback = async (req, res) => {
       "redirect_uri",
       process.env.AIRTABLE_REDIRECT_URI ||
         (process.env.NODE_ENV === "production"
-          ? "https://airtable-forms.onrender.com/api/auth/airtable/callback"
+          ? "https://airtable-assignment-j0jc.onrender.com/api/auth/airtable/callback"
           : "http://localhost:5000/api/auth/airtable/callback")
     );
     paramsBasic.append("code_verifier", codeVerifier);
@@ -135,7 +135,7 @@ export const callback = async (req, res) => {
           "redirect_uri",
           process.env.AIRTABLE_REDIRECT_URI ||
             (process.env.NODE_ENV === "production"
-              ? "https://airtable-forms.onrender.com/api/auth/airtable/callback"
+              ? "https://airtable-assignment-j0jc.onrender.com/api/auth/airtable/callback"
               : "http://localhost:5000/api/auth/airtable/callback")
         );
         paramsBody.append("code_verifier", codeVerifier);
@@ -175,7 +175,7 @@ export const callback = async (req, res) => {
         console.error("Failed to save session:", err);
         return res.status(500).send("Failed to save session");
       }
-      res.redirect("http://localhost:5173/dashboard");
+      res.redirect("airtable-assignment-6kcjvfi1f-ayeshas-projects-17feed8e.vercel.app/dashboard");
     });
   } catch (err) {
     console.error(err.response?.data || err.message);
