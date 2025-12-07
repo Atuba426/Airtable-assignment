@@ -10,6 +10,7 @@ const SUPPORTED = [
   "multipleAttachments",
 ];
 
+// CORRECTED: This is the ONLY default export for the Builder component.
 export default function Builder() {
   const { formId } = useParams();
   const navigate = useNavigate();
@@ -22,7 +23,6 @@ export default function Builder() {
 
   const [form, setForm] = useState({
     title: "",
-    slug: "",
     fields: [],
   });
 
@@ -35,7 +35,7 @@ export default function Builder() {
   // Load bases
   useEffect(() => {
     api
-      .get("/airtable/bases")
+      .get("/api/airtable/bases")
       .then((r) => setBases(r.data?.bases || []))
       .catch(() => setBases([]));
   }, []);
@@ -47,7 +47,6 @@ export default function Builder() {
       const f = r.data;
       setForm({
         title: f.title,
-        slug: f.slug,
         fields: f.fields || [],
       });
       setSelected({ baseId: f.baseId, tableId: f.tableId });
@@ -58,7 +57,7 @@ export default function Builder() {
   useEffect(() => {
     if (!selected.baseId) return;
     api
-      .get("/airtable/tables", {
+      .get("/api/airtable/tables", {
         params: { baseId: selected.baseId },
       })
       .then((r) => setTables(r.data.tables || []));
@@ -68,7 +67,7 @@ export default function Builder() {
   useEffect(() => {
     if (!selected.baseId || !selected.tableId) return;
     api
-      .get(`/airtable/${selected.baseId}/${selected.tableId}/fields`)
+      .get(`/api/airtable/${selected.baseId}/${selected.tableId}/fields`)
       .then((r) => setFields(r.data.fields || []));
   }, [selected.baseId, selected.tableId]);
 
@@ -123,23 +122,22 @@ export default function Builder() {
     if (!selected.baseId || !selected.tableId)
       return alert("Select base & table first!");
 
-    if (!form.slug) return alert("Enter a slug");
-
     setLoading(true);
     const payload = {
       ...form,
       baseId: selected.baseId,
       tableId: selected.tableId,
+      
     };
 
     try {
       let r;
       if (formId) {
-        r = await api.put(`/forms/${formId}`, payload);
+        r = await api.put(`/api/airtable/forms/${formId}`, payload);
       } else {
-        r = await api.post("/forms", payload);
+        r = await api.post("/api/airtable/forms", payload);
       }
-      navigate(`/form/${r.data.slug}`);
+      alert("Form saved successfully!");
     } catch (err) {
       alert(err.response?.data?.error || "Save failed");
     } finally {
@@ -148,153 +146,145 @@ export default function Builder() {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
-      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
-        {/* Left Section: Base/Table + Title + Slug */}
-        <section className="bg-white p-4 rounded border">
-          <h2 className="font-semibold mb-3">Pick Base → Table</h2>
+    <div style={styles.container}>
+      <div style={styles.maxWidth}>
+        <div style={styles.grid}>
+          {/* Left Column */}
+          <section style={styles.card}>
+            <h2 style={styles.heading}>Pick Base → Table</h2>
 
-          <select
-            className="w-full border p-2 rounded mb-3"
-            value={selected.baseId}
-            onChange={(e) =>
-              setSelected({ baseId: e.target.value, tableId: "" })
-            }
-          >
-            <option value="">Select base</option>
-            {bases.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="w-full border p-2 rounded"
-            value={selected.tableId}
-            onChange={(e) =>
-              setSelected((s) => ({ ...s, tableId: e.target.value }))
-            }
-          >
-            <option value="">Select table</option>
-            {tables.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-
-          <div className="mt-4">
-            <label className="block mb-1">Form Title</label>
-            <input
-              className="w-full border p-2 rounded"
-              value={form.title}
+            <select
+              style={styles.select}
+              value={selected.baseId}
               onChange={(e) =>
-                setForm({ ...form, title: e.target.value })
+                setSelected({ baseId: e.target.value, tableId: "" })
               }
-            />
-          </div>
+            >
+              <option value="">Select base</option>
+              {bases.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
 
-          <div className="mt-3">
-            <label className="block mb-1">Slug</label>
-            <input
-              className="w-full border p-2 rounded"
-              value={form.slug}
+            <select
+              style={styles.select}
+              value={selected.tableId}
               onChange={(e) =>
-                setForm({ ...form, slug: e.target.value })
+                setSelected((s) => ({ ...s, tableId: e.target.value }))
               }
-              placeholder="my-form"
-            />
-          </div>
-        </section>
+            >
+              <option value="">Select table</option>
+              {tables.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
 
-        {/* Right Section: Fields */}
-        <section className="bg-white p-4 rounded border">
-          <h2 className="font-semibold mb-2">Fields</h2>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Form Title</label>
+              <input
+                style={styles.input}
+                value={form.title}
+                onChange={(e) =>
+                  setForm({ ...form, title: e.target.value })
+                }
+              />
+            </div>
+          </section>
 
-          {compatibleFields.map((f) => {
-            const included = !!form.fields.find(
-              (x) => x.airtableFieldId === f.id
-            );
-            const field = form.fields.find(
-              (x) => x.airtableFieldId === f.id
-            );
+          {/* Right Column */}
+          <section style={styles.card}>
+            <h2 style={styles.heading}>Fields</h2>
 
-            return (
-              <div key={f.id} className="border rounded p-3 mb-3">
-                <div className="flex justify-between">
-                  <div>
-                    <div className="font-medium">{f.name}</div>
-                    <div className="text-xs text-gray-500">{f.type}</div>
+            {compatibleFields.map((f) => {
+              const included = !!form.fields.find(
+                (x) => x.airtableFieldId === f.id
+              );
+              const field = form.fields.find(
+                (x) => x.airtableFieldId === f.id
+              );
+
+              return (
+                <div key={f.id} style={styles.fieldCard}>
+                  <div style={styles.fieldHeader}>
+                    <div>
+                      <div style={styles.fieldName}>{f.name}</div>
+                      <div style={styles.fieldType}>{f.type}</div>
+                    </div>
+
+                    <button
+                      style={{
+                        ...styles.button,
+                        backgroundColor: included ? "#dc2626" : "#000",
+                      }}
+                      onClick={() => toggleInclude(f)}
+                    >
+                      {included ? "Remove" : "Add"}
+                    </button>
                   </div>
 
-                  <button
-                    className={`px-2 py-1 rounded ${
-                      included
-                        ? "bg-red-500 text-white"
-                        : "bg-black text-white"
-                    }`}
-                    onClick={() => toggleInclude(f)}
-                  >
-                    {included ? "Remove" : "Add"}
-                  </button>
-                </div>
-
-                {included && (
-                  <div className="mt-2 space-y-2">
-                    <input
-                      className="border p-2 rounded w-full"
-                      value={field.label}
-                      onChange={(e) =>
-                        updateField(field.id, {
-                          label: e.target.value,
-                        })
-                      }
-                    />
-
-                    <label className="flex items-center gap-2">
+                  {included && (
+                    <div style={styles.fieldContent}>
                       <input
-                        type="checkbox"
-                        checked={field.required}
+                        style={styles.input}
+                        value={field.label}
                         onChange={(e) =>
                           updateField(field.id, {
-                            required: e.target.checked,
+                            label: e.target.value,
                           })
                         }
                       />
-                      Required
-                    </label>
 
-                    {/* Conditional Logic */}
-                    <RuleEditor
-                      allFields={form.fields}
-                      field={field}
-                      onChange={(rule) =>
-                        updateField(field.id, { visibleIf: rule })
-                      }
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </section>
+                      <label style={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={field.required}
+                          onChange={(e) =>
+                            updateField(field.id, {
+                              required: e.target.checked,
+                            })
+                          }
+                        />
+                        Required
+                      </label>
 
-        <div className="md:col-span-2 flex justify-end">
-          <button
-            disabled={loading}
-            onClick={save}
-            className="px-4 py-2 bg-green-600 text-white rounded"
-          >
-            {loading ? "Saving..." : formId ? "Update" : "Save"}
-          </button>
+                      {/* Conditional Logic */}
+                      <RuleEditor
+                        allFields={form.fields}
+                        field={field}
+                        onChange={(rule) =>
+                          updateField(field.id, { visibleIf: rule })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </section>
+
+          <div style={styles.saveContainer}>
+            <button
+              disabled={loading}
+              onClick={save}
+              style={{
+                ...styles.button,
+                backgroundColor: "#16a34a",
+                padding: "12px 24px",
+                fontSize: "16px",
+              }}
+            >
+              {loading ? "Saving..." : formId ? "Update" : "Save"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-// ------------------ HELPERS ------------------
 
 function mapType(t) {
   if (t === "multilineText") return "long_text";
@@ -332,15 +322,15 @@ function RuleEditor({ field, allFields, onChange }) {
   };
 
   return (
-    <div className="border p-2 rounded bg-gray-50">
-      <div className="text-sm font-medium">Conditional Logic</div>
+    <div style={styles.ruleEditor}>
+    
 
       <select
-        className="border p-1 w-full rounded mt-1"
+        style={styles.select}
         value={field.visibleIf?.questionKey || ""}
         onChange={(e) => setRule({ questionKey: e.target.value })}
       >
-        <option value="">Always visible</option>
+       
         {otherFields.map((f) => (
           <option key={f.id} value={f.questionKey}>
             {f.label}
@@ -350,7 +340,7 @@ function RuleEditor({ field, allFields, onChange }) {
 
       {field.visibleIf?.questionKey && (
         <input
-          className="border p-1 rounded w-full mt-2"
+          style={styles.input}
           placeholder="Value to match"
           value={field.visibleIf?.value || ""}
           onChange={(e) => setRule({ value: e.target.value })}
@@ -359,3 +349,106 @@ function RuleEditor({ field, allFields, onChange }) {
     </div>
   );
 }
+
+const styles = {
+  container: {
+    minHeight: "100vh",
+    padding: "24px",
+    backgroundColor: "#f9fafb",
+  },
+  maxWidth: {
+    maxWidth: "1280px",
+    margin: "0 auto",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "24px",
+  },
+  card: {
+    backgroundColor: "white",
+    padding: "16px",
+    borderRadius: "8px",
+    border: "1px solid #e5e7eb",
+  },
+  heading: {
+    fontWeight: "600",
+    marginBottom: "12px",
+    fontSize: "18px",
+  },
+  select: {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    padding: "8px",
+    borderRadius: "6px",
+    marginBottom: "12px",
+  },
+  formGroup: {
+    marginTop: "16px",
+  },
+  label: {
+    display: "block",
+    marginBottom: "4px",
+    fontSize: "14px",
+  },
+  input: {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    padding: "8px",
+    borderRadius: "6px",
+    boxSizing: "border-box",
+  },
+  fieldCard: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "6px",
+    padding: "12px",
+    marginBottom: "12px",
+  },
+  fieldHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  fieldName: {
+    fontWeight: "500",
+  },
+  fieldType: {
+    fontSize: "12px",
+    color: "#6b7280",
+  },
+  button: {
+    padding: "6px 12px",
+    borderRadius: "6px",
+    color: "white",
+    border: "none",
+    cursor: "pointer",
+  },
+  fieldContent: {
+    marginTop: "8px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  ruleEditor: {
+    border: "1px solid #d1d5db",
+    padding: "8px",
+    borderRadius: "6px",
+    backgroundColor: "#f9fafb",
+  },
+  ruleTitle: {
+    fontSize: "14px",
+    fontWeight: "500",
+    marginBottom: "8px",
+  },
+  saveContainer: {
+    gridColumn: "1 / -1",
+    display: "flex",
+    justifyContent: "flex-end",
+  },
+};
+

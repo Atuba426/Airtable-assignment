@@ -11,7 +11,7 @@ import FormViewer from "./pages/FormViewer.jsx";
 const router = createBrowserRouter([
   { path: "/", element: <Landing /> },
   { path: "/dashboard", element: <Dashboard /> },
-  { path: "/builder/:formId?", element: <Builder /> },
+  { path: "builder/:formId?", element: <Builder /> },
   { path: "/form/:slug", element: <FormViewer /> },
   { path: "/app", element: <App /> },
 ]);

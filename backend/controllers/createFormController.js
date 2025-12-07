@@ -50,7 +50,7 @@ export const getFields = async (req, res) => {
         received: { baseId, tableId },
       });
     }
-    const airtable = airtableService(user.airtable.accessToken);
+    const airtable = airtableService(user.accessToken);
 
     const table = await airtable.getTableFields(baseId, tableId);
 
@@ -75,14 +75,14 @@ export const createForm = async (req, res) => {
     const {
       baseId,
       tableId,
-      selectedFields,
+      fields,
     } = req.body;
 
 
-    const questions = selectedFields.map((field) => ({
+    const questions = fields.map((field) => ({
       questionKey: "q_" + field.fieldId,
-      fieldId: field.fieldId,
-      label: field.label || field.name, // user can rename
+      airtableFieldId: field.fieldId || field.id, 
+      label: field.label || field.name, 
       type: field.type,
       required: field.required || false,
       conditionalRules: field.conditionalRules || {},
@@ -110,7 +110,7 @@ export const getAllForms = async (req, res) => {
     const forms = await Form.find({ owner: user._id }).select(
       "_id formName createdAt updatedAt"
     );
-    res.status(200).json(forms);
+    res.status(200).json({ forms: forms || [] });
   } catch (err) {
     res.status(500).json({ message: "Error fetching forms", error: err });
   }

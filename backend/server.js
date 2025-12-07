@@ -51,7 +51,7 @@ import supportedRoutes from "./routes/supportedRoutes.js";
 
 app.use("/api/auth/airtable", authRoutes);
 app.use("/api/airtable", createFormRoutes);
-app.use("/api", supportedRoutes);
+app.use("/api/airtable", supportedRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.get("/api/test", (req, res) => {

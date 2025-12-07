@@ -13,18 +13,15 @@ export default function Dashboard() {
 
   const fetchForms = () => {
     api
-      .get("/airtable/get-forms",)
-      .then((r) => setForms(r.data.forms))  // backend returns { forms: [...] }
+      .get("/api/airtable/get-forms")
+      .then((r) => setForms(r.data.forms))
       .catch((err) => console.log(err));
-
   };
-
-
 
   const onDelete = async (id) => {
     if (!confirm("Delete this form? This cannot be undone.")) return;
     try {
-      await api.delete(`/forms/${id}`);  // matches backend route
+      await api.delete(`/forms/${id}`);
       fetchForms();
     } catch (e) {
       alert(e.response?.data?.error || "Failed to delete form");
@@ -48,43 +45,45 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow divide-y">
           <div className="p-4 font-medium">Saved Forms</div>
 
-          {forms.length === 0 && (
+          {(!forms || forms.length === 0) && (
             <div className="p-4 text-gray-500">No forms yet.</div>
           )}
 
-          {forms.map((f) => (
-            <div key={f._id} className="p-4 flex items-center justify-between">
-              <div>
-                <div className="font-medium">{f.title}</div>
-                {/* Slug is optional now */}
+          {Array.isArray(forms) &&
+            forms.map((f) => (
+              <div
+                key={f._id}
+                className="p-4 flex items-center justify-between"
+              >
+                <div>
+                  <div className="font-medium">{f.title}</div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Link
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                    to={`/builder/${f._id}`}
+                  >
+                    Edit
+                  </Link>
+
+                  <Link
+                    className="text-green-600 hover:text-green-800 font-medium"
+                    to={`/form/${f._id}`}
+                  >
+                    Open
+                  </Link>
+
+                  <button
+                    className="text-red-600 hover:text-red-800 font-medium"
+                    onClick={() => onDelete(f._id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-
-              <div className="flex items-center gap-3">
-                <Link
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                  to={`/builder/${f._id}`}   // edit uses MongoDB id
-                >
-                  Edit
-                </Link>
-
-                <Link
-                  className="text-green-600 hover:text-green-800 font-medium"
-                  to={`/form/${f._id}`}      // viewer uses id NOT slug
-                >
-                  Open
-                </Link>
-
-                <button
-                  className="text-red-600 hover:text-red-800 font-medium"
-                  onClick={() => onDelete(f._id)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
-
       </div>
     </div>
   );
